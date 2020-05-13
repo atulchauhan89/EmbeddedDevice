@@ -1,0 +1,50 @@
+from time import sleep
+import serial
+from PythonProjects.Device.findport import find_port
+from serial.tools.list_ports import comports
+
+
+def updater_communication(device_command):
+
+    connect_port = find_port()
+
+    if connect_port != 'None':
+        serial_port = serial.Serial(connect_port, baudrate=9600, timeout=1)
+        print('Connected to ' + connect_port)
+
+    else:
+        conn_issue = 'Connection Issue!'
+        print("USB is not connected properly with Updater, "
+              "Please connect and retry")
+        return conn_issue
+
+    serial_port.write(device_command.encode())
+    serial_string = ""# Used to hold data coming over UART
+    try:
+        while True:
+            # Wait until there is data waiting in the serial buffer
+            if serial_port.in_waiting > 0:
+                # Read data out of the buffer until a carraige return / new line is found
+                serial_string = serial_port.readline()
+                response = (serial_string.decode('Ascii'))
+                # Print the contents of the serial data
+                print(response)
+
+                # if response == "PR300307":
+                #     sleep(1)
+                #     serial_port.close()
+
+    # serialPort.write(b"Thank you for sending data \r\n")
+    except serial.serialutil.SerialException:
+        print("The port is at use")
+        sleep(1)
+        serial_port.close()
+
+    finally:
+        serial_port.close()
+
+
+if __name__ == '__main__':
+    command = "display_device_version.sh \r\n"
+    device_communication(command)
+    #print(command_response)
