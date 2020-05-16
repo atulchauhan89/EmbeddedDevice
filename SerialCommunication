@@ -1,50 +1,60 @@
-from time import sleep
+import sys
+import findport
+import  re
+# sys.path.append("")
+# import csv import time
+# from time import sleep
 import serial
-from PythonProjects.Device.findport import find_port
+
+
 from serial.tools.list_ports import comports
 
 
-def updater_communication(device_command):
+def device_communication(device_command):
 
-    connect_port = find_port()
+    connect_port = findport.find_port()
 
     if connect_port != 'None':
-        serial_port = serial.Serial(connect_port, baudrate=15600, timeout=1)
-        print('Connected to ' + connect_port)
+        serial_port = serial.Serial(connect_port, baudrate=9600, timeout=1)
+        #   print('Connected to ' + connect_port)
 
     else:
         conn_issue = 'Connection Issue!'
-        print("USB is not connected properly with Audirino device, "
+        print("USB is not connected properly with device, "
               "Please connect and retry")
         return conn_issue
 
     serial_port.write(device_command.encode())
-    serial_string = ""# Used to hold data coming over UART
-    try:
-        while True:
-            # Wait until there is data waiting in the serial buffer
-            if serial_port.in_waiting > 0:
-                # Read data out of the buffer until a carraige return / new line is found
+    # Used to hold data coming over UART
+    serial_string = ""
+    result=[]
+    while True:
+        try:  # Wait until there is data waiting in the serial buffer
+            if serial_port.in_waiting > 1:
+                #   serial_port.flush()
                 serial_string = serial_port.readline()
-                response = (serial_string.decode('Ascii'))
-                # Print the contents of the serial data
-                print(response)
+                # Read data out of the buffer until a carriage return / new line is found
+                try:
+                    output = (serial_string.decode('Ascii'))
+                    if output == '/ # ':
+                        serial_port.flush()
+                        serial_port.close()
+                    else:
+                        result.append(output)
+                except:
+                    continue
+                # print(response)
+                # with open("test_data.csv", "a") as f:
+                #     writer = csv.writer(f, delimiter=",")
+                #     writer.writerow([time.time(), response])
+        except:
+            break
 
-                # if response == "data":
-                #     sleep(1)
-                #     serial_port.close()
-
-    # serialPort.write(b"Thank you for sending data \r\n")
-    except serial.serialutil.SerialException:
-        print("The port is at use")
-        sleep(1)
-        serial_port.close()
-
-    finally:
-        serial_port.close()
+    response = (' '.join(map(str.strip, result)))
+    response=re.sub(r'[^a-zA-Z0-9._\s]+', '', response)
 
 
-if __name__ == '__main__':
-    command = "adurino_device_version.sh \r\n"
-    device_communication(command)
-    #print(command_response)
+    return response
+
+
+
